@@ -82,7 +82,7 @@ export default class FilePickerPlugin implements FlutterPlugin, MethodCallHandle
       let initialDirectory: string = args.get("initialDirectory") as string;
       let allowedExtensions: List<string> = args.get("allowedExtensions") as List<string>;
       let bytes: Uint8Array = args.get("bytes") as Uint8Array;
-      this.delegate?.saveFile(fileName, type, initialDirectory, this.allowedExtensions as Array<string>, result)
+      this.delegate?.saveFile([fileName], type, initialDirectory, this.allowedExtensions as Array<string>, result)
       return;
     }
     if (this.fileType == null) {

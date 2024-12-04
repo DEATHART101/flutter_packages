@@ -27,7 +27,7 @@ import {
   UIAbility,
   Want
 } from '@kit.AbilityKit';
-import  decodeURIComponent from '@ohos.util';
+import decodeURIComponent from '@ohos.util';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { EventChannel, Log, MethodChannel, MethodResult } from '@ohos/flutter_ohos';
@@ -37,8 +37,10 @@ import { FileUtils } from './FileUtils'
 import List from '@ohos.util.List'
 import { picker, WriteOptions } from '@kit.CoreFileKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
+
 const timestamp = Date.now();
 const TAG: string = "FilePickerDelegate";
+
 export class FilePickerDelegate {
   private permissionManager: PermissionManager | null = null;
   private eventSink: EventSink | null = null;
@@ -82,6 +84,7 @@ export class FilePickerDelegate {
         photoSelectOptions.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
         photoSelectOptions.maxSelectNumber = this.isMultipleSelection ? 9 : 1;
         await photoPicker.select(photoSelectOptions).then((photoSelectResult) => {
+
           this.savaFilePath = photoSelectResult.photoUris
           if (photoSelectResult == null || photoSelectResult.photoUris.length == 0) {
             this.finishWithError("unknown_activity", "Unknown activity error, please fill an issue.");
@@ -91,6 +94,8 @@ export class FilePickerDelegate {
           } else {
             this.handleSingleResult(photoSelectResult.photoUris[0]);
           }
+        }).catch((error: BusinessError) => {
+          this.finishWithError("unknown_activity", "Unknown activity error, please fill an issue.");
         })
         break;
       }
@@ -268,9 +273,9 @@ export class FilePickerDelegate {
     }
   }
 
-  saveFinishWithSuccess(data: Array<string>) {
+  saveFinishWithSuccess(data: string) {
     this.dispatchEventStatus(false);
-    this.pendingResult?.success(data[0]);
+    this.pendingResult?.success(data);
     this.clearPendingResult();
   }
 
@@ -290,142 +295,40 @@ export class FilePickerDelegate {
     this.clearPendingResult();
   }
 
-  saveFile(file: string, type: string, initialDirectory: string, allowedExtensions: Array<string>,
+  saveFile(fileNameArray: Array<string>, type: string, initialDirectory: string, allowedExtensions: Array<string>,
     result: MethodResult) {
     if (!this.setPendingMethodCallAndResult(result)) {
       this.finishWithAlreadyActiveError(result);
       return;
     }
-    if (this.savaFilePath == null || this.savaFilePath.length == 0) {
-      this.finishWithError("save file error ", "请选择文件");
-      return;
+    if (initialDirectory == null || initialDirectory.length == 0) {
+      this.finishWithError("需压保存文件目录为空", "请输入保存文件初始化目录");
     }
-    if (this.savaFilePath != null && this.savaFilePath.length > 1 && file.length != 0) {
-      this.finishWithError("save file error ", "多选文件不支持自定义重命名保存");
-      return;
-    }
-    if (this.savaFilePath.length == 1) {
-      if ((file != null && file.length != 0) || (initialDirectory != null && initialDirectory.length != 0) ||
-        (allowedExtensions != null && allowedExtensions.length != 0)) {
-        let documentSaveOptions: picker.DocumentSaveOptions | null = null
-        documentSaveOptions = new picker.DocumentSaveOptions();
-        documentSaveOptions.defaultFilePathUri = initialDirectory;
-        if (allowedExtensions) {
-          documentSaveOptions.fileSuffixChoices = allowedExtensions;
-        }
-        let commonContext = this.ability?.context as common.UIAbilityContext;
-        let documentPicker = new picker.DocumentViewPicker(commonContext);
-        let newFileName: string = FileUtils.getFileName(this.savaFilePath[0]);
-        let extension: string = FileUtils.getFileExtension(newFileName);
-        let newSaveFileName: string = FileUtils.ensureFileExtension(file, extension);
-        documentSaveOptions.newFileNames = [newSaveFileName];
-        documentPicker.save(documentSaveOptions).then((documentSaveResult: Array<string>) => {
-          this.singSave(this.savaFilePath[0], documentSaveResult[0]);
-          this.saveFinishWithSuccess(documentSaveResult);
-        }).catch((err: BusinessError) => {
-          Log.e(TAG,
-            "Can't find a valid activity to handle the request. Make sure you've a file explorer installed.");
-          this.finishWithError("invalid_format_type", "Can't handle the provided file type.");
-        });
-      } else {
-        let documentSaveOptions = new picker.DocumentSaveOptions();
-        let commonContext = this.ability?.context as common.UIAbilityContext;
-        let documentPicker = new picker.DocumentViewPicker(commonContext);
-        let newFileName: string = FileUtils.getFileName(this.savaFilePath[0]);
-        let extensionName = "." + FileUtils.getFileExtension(newFileName);
-        documentSaveOptions.newFileNames = [extensionName];
-        documentPicker.save(documentSaveOptions).then((documentSaveResult: Array<string>) => {
-          this.singSave(this.savaFilePath[0], documentSaveResult[0]);
-          this.saveFinishWithSuccess(documentSaveResult);
-        }).catch((err: BusinessError) => {
-          Log.e(TAG,
-            "Can't find a valid activity to handle the request. Make sure you've a file explorer installed.");
-          this.finishWithError("invalid_format_type", "Can't handle the provided file type.");
-        });
+    if ((initialDirectory != null && initialDirectory.length != 0)) {
+      let documentSaveOptions: picker.DocumentSaveOptions | null = null
+      documentSaveOptions = new picker.DocumentSaveOptions();
+      documentSaveOptions.defaultFilePathUri = initialDirectory;
+      if (allowedExtensions) {
+        documentSaveOptions.fileSuffixChoices = allowedExtensions;
       }
-    }
-    if (this.savaFilePath.length > 1) {
-      let documentSaveOptions = new picker.DocumentSaveOptions();
       let commonContext = this.ability?.context as common.UIAbilityContext;
       let documentPicker = new picker.DocumentViewPicker(commonContext);
-      let saveName: Array<string> = new Array<string>();
-      let saveNames: Array<string> = new Array<string>();
-      this.savaFilePath.forEach((item) => {
-        saveName.push(FileUtils.getFileName(item))
-      })
-      saveName.forEach(item=>{
-        if(this.isURLEncoded(item)){
-          saveNames.push(this.urlDecodeManual(item));
-        }else {
-          saveNames.push(item);
-        }
-      })
-      documentSaveOptions.newFileNames = saveNames
+      documentSaveOptions.newFileNames = fileNameArray;
+      documentSaveOptions.defaultFilePathUri = initialDirectory
       documentPicker.save(documentSaveOptions).then((documentSaveResult: Array<string>) => {
-        this.multipleSave(this.savaFilePath, documentSaveResult);
-        this.saveFinishWithSuccess(documentSaveResult);
+        this.singSave(initialDirectory, documentSaveResult[0])
+        let originFileName = FileUtils.getFileName(documentSaveResult[0])
+        let newFileName = FileUtils.urlDecodeManual(originFileName);
+        let newSavePath = FileUtils.replaceFileName(documentSaveResult[0], originFileName, newFileName)
+        this.saveFinishWithSuccess(newSavePath);
       }).catch((err: BusinessError) => {
-        Log.e(TAG, "Can't find a valid activity to handle the request. Make sure you've a file explorer installed.");
-        this.finishWithError("invalid_format_type", "Can't handle the provided file type.");
+        if (err.code == 13900001) {
+          this.finishWithError(err.code.toString(), err.message + ", 此文件路径无权访问，只接受应用沙箱路径");
+        } else {
+          this.finishWithError(err.code.toString(), err.message);
+        }
       });
     }
-  }
-
-  urlDecodeManual(encodedString: string): string {
-    let result = '';
-    let i = 0;
-    while (i < encodedString.length) {
-      const char = encodedString[i];
-      if (char === '%') {
-        // 提取 %XX 形式的子字符串
-        const hexCode = encodedString.substring(i + 1, i + 3);
-        const byte = parseInt(hexCode, 16);
-        // 将字节转换为字符
-        result += String.fromCharCode(byte);
-        // 跳过已经处理的三个字符
-        i += 3;
-      } else {
-        // 直接添加普通字符
-        result += char;
-        i++;
-      }
-    }
-    // 将结果从 UTF-8 编码转换为字符串
-    return this.decodeUTF8(result);
-  }
-
-  decodeUTF8(utf8String: string): string {
-    const utf8Bytes = new Uint8Array(utf8String.length);
-    for (let i = 0; i < utf8String.length; i++) {
-      utf8Bytes[i] = utf8String.charCodeAt(i);
-    }
-    return new util.TextDecoder().decodeToString(utf8Bytes);
-  }
-
-  isURLEncoded(input: string): boolean {
-    const regex = /%[0-9A-Fa-f]{2}/g;
-    let match:RegExpExecArray|null;
-    let decodedLength = 0;
-    while ((match = regex.exec(input)) !== null) {
-      const hexCode = match[0].substring(1);
-      const byte = parseInt(hexCode, 16);
-      // 检查是否为有效的字节值
-      if (isNaN(byte) || byte < 0 || byte > 255) {
-        return false;
-      }
-      decodedLength += 1;
-    }
-    // 检查是否有未编码的非 ASCII 字符
-    const nonEncodedNonASCII = /[^%0-9A-Za-z\-._~]/.test(input.replace(regex, ''));
-    return !nonEncodedNonASCII && decodedLength > 0;
-  }
-
-  multipleSave(saveFilePath: Array<string>, photoSaveResult: Array<string>) {
-    saveFilePath.forEach((item, index) => {
-      let file = fs.openSync(item);
-      let file2 = fs.openSync(photoSaveResult[index], fs.OpenMode.READ_WRITE);
-      fs.copyFileSync(file.fd, file2.fd)
-    })
   }
 
   singSave(savePath: string, photoSaveResult: string) {

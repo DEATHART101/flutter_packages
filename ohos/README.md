@@ -85,11 +85,11 @@ if (selectedDirectory == null) {
   // User canceled the picker
 }
 ```
-#### Save-file / save-as dialog
+#### Save-file 
 ```dart
 String? outputFile = await FilePicker.platform.saveFile(
-  dialogTitle: 'Please select an output file:',
-  fileName: 'output-file.pdf',
+  fileName: 'output-file.pdf',//需要保存的文件名
+  initialDirectory:"/data/xxxx/xxxx/.pdf" //需要文件所在的路径（权限收紧后，仅仅支持应用沙箱路径）
 );
 
 if (outputFile == null) {
