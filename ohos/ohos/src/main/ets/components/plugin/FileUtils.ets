@@ -74,7 +74,7 @@ export class FileUtils {
       let outfilePath: string | null = null;
       outfilePath = path + "/" + fileName;
       let file = fs.openSync(outfilePath, fs.OpenMode.CREATE);
-      let newName: string = FileUtils.urlDecodeManual(fileName);
+      let newName: string = decodeURI(fileName);
       let finalPath = FileUtils.replaceFileName(outfilePath, fileName, newName)
       fs.copyFileSync(inputFile.fd, outfilePath);
       fs.renameSync(outfilePath, finalPath)
