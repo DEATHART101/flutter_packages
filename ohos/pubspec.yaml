@@ -1,7 +1,7 @@
 name: file_picker_ohos
 description: a Flutter plugin that enables developers to easily integrate file picking functionality into their applications, allowing users to select files from their device's storage."
 version: 1.0.1
-repository: https://gitee.com/openharmony-sig/fluttertpc_file_picker
+repository: https://gitcode.com/openharmony-sig/fluttertpc_file_picker
 
 environment:
   sdk: '>=2.19.6 <3.0.0'
