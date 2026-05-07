@@ -142,6 +142,13 @@ class FilePickerIO extends FilePicker {
       Uint8List? bytes,
       bool lockParentWindow = false}) {
     if (Platform.isIOS || Platform.isAndroid) {
+      if (bytes == null) {
+        throw ArgumentError.value(
+          bytes,
+          'bytes',
+          'saveFile() on mobile platforms requires non-null bytes.',
+        );
+      }
       return _channel.invokeMethod("save", {
         "fileName": fileName,
         "fileType": type.name,

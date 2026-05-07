@@ -153,7 +153,8 @@
         NSString *fileName = [arguments valueForKey:@"fileName"];
         NSString *fileType = [arguments valueForKey:@"fileType"];
         NSString *initialDirectory = [arguments valueForKey:@"initialDirectory"];
-        FlutterStandardTypedData *bytes = [arguments valueForKey:@"bytes"];
+        id rawBytes = [arguments valueForKey:@"bytes"];
+        FlutterStandardTypedData *bytes = [rawBytes isKindOfClass:[FlutterStandardTypedData class]] ? rawBytes : nil;
         [self saveFileWithName:fileName fileType:fileType initialDirectory:initialDirectory bytes: bytes];
 #else
         _result([FlutterError errorWithCode:@"Unsupported function"
@@ -175,6 +176,13 @@
 
 #ifdef PICKER_DOCUMENT
 - (void)saveFileWithName:(NSString*)fileName fileType:(NSString *)fileType initialDirectory:(NSString*)initialDirectory bytes:(FlutterStandardTypedData*)bytes{
+    if(bytes == nil){
+        _result([FlutterError errorWithCode:@"invalid_args"
+                                    message:@"saveFile on iOS requires non-null bytes."
+                                    details:nil]);
+        _result = nil;
+        return;
+    }
     self.isSaveFile = YES;
     NSFileManager* fm = [NSFileManager defaultManager];
     NSURL* documentsDirectory = [fm URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask][0];
@@ -187,12 +195,10 @@
             error = nil;
         }
     }
-    if(bytes != nil){
-        [bytes.data writeToURL:destinationPath options:NSDataWritingAtomic error:&error];
-        if (error != nil) {
-            _result([FlutterError errorWithCode:@"Failed to write file" message:[error debugDescription] details:nil]);
-            error = nil;
-        }
+    [bytes.data writeToURL:destinationPath options:NSDataWritingAtomic error:&error];
+    if (error != nil) {
+        _result([FlutterError errorWithCode:@"Failed to write file" message:[error debugDescription] details:nil]);
+        error = nil;
     }
     self.documentPickerController = [[UIDocumentPickerViewController alloc] initWithURL:destinationPath inMode:UIDocumentPickerModeExportToService];
     self.documentPickerController.delegate = self;
