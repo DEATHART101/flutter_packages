@@ -141,6 +141,15 @@ class FilePickerIO extends FilePicker {
       List<String>? allowedExtensions,
       Uint8List? bytes,
       bool lockParentWindow = false}) {
+    if (Platform.operatingSystem == 'ohos') {
+      return _channel.invokeMethod("save", {
+        "fileName": fileName,
+        "fileType": type.name,
+        "initialDirectory": initialDirectory,
+        "allowedExtensions": allowedExtensions,
+        "bytes": bytes,
+      });
+    }
     if (Platform.isIOS || Platform.isAndroid) {
       if (bytes == null) {
         throw ArgumentError.value(

@@ -17,6 +17,8 @@ dependencies:
   path: ^1.8.2
   win32: ^4.1.4
   cross_file: ^0.3.3+4
+  file_picker_ohos:
+    path: ohos
 
 dev_dependencies:
   lints: ^2.0.0
@@ -44,3 +46,5 @@ flutter:
         default_package: file_picker
       linux:
         default_package: file_picker
+      ohos:
+        default_package: file_picker_ohos
